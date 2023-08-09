@@ -48,8 +48,8 @@ resource "aws_eks_node_group" "private-nodes" {
 
   # The node group will be launched in private subnets defined by their IDs 
   subnet_ids = [
-    aws_subnet.private-eu-west-1a.id,
-    aws_subnet.private-eu-west-1b.id
+    aws_subnet.private-eu-central-1a.id,
+    aws_subnet.private-eu-central-1b.id
   ]
 
   capacity_type  = "ON_DEMAND"

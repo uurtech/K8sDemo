@@ -3,7 +3,7 @@ This resource creates a NAT Gateway, which allows private instances in the VPC
 to access the internet via the public subnets (publicly routable IP address).
 */
 resource "aws_eip" "nat" {
-  vpc = true
+  domain = "vpc"
 
   tags = {
     Name = "nat"
@@ -23,7 +23,7 @@ resource "aws_nat_gateway" "nat" {
   This public subnet must have a route to an Internet Gateway (aws_internet_gateway.igw) to enable internet access.
   */
 
-  subnet_id     = aws_subnet.public-eu-west-1a.id
+  subnet_id     = aws_subnet.public-eu-central-1a.id
 
   tags = {
     Name = "nat"
