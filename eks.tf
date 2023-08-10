@@ -1,42 +1,84 @@
-resource "aws_iam_role" "demo" {
-  name = "eks-cluster-demo"
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 19.13"
 
-  assume_role_policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "eks.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }
+  cluster_name                   = "demo"
+  cluster_version                = "1.27"
+  cluster_endpoint_public_access = true
+  create_kms_key                 = false
+  cluster_encryption_config      = {}
+
+  cluster_enabled_log_types = [
+    "audit",
+    "api",
   ]
-}
-POLICY
-}
 
-resource "aws_iam_role_policy_attachment" "demo-AmazonEKSClusterPolicy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.demo.name
-}
+  vpc_id     = aws_vpc.main.id
+  subnet_ids = [
+    aws_subnet.private-eu-central-1a.id,
+    aws_subnet.private-eu-central-1b.id,
+    aws_subnet.private-eu-central-1c.id,
+  ]
 
-resource "aws_eks_cluster" "demo" {
-  name     = "demo"
-  role_arn = aws_iam_role.demo.arn
-  enabled_cluster_log_types = ["api", "audit"]
+  # Fargate profiles use the cluster primary security group so these are not utilized
+  create_cluster_security_group = false
+  create_node_security_group    = false
+  create_cloudwatch_log_group   = false
 
+  # cluster_endpoint_public_access_cidrs = [
+  #   "***************",
+  #   "***************",
+  # ]
 
-  vpc_config {
-    subnet_ids = [
-      aws_subnet.private-eu-central-1a.id,
-      aws_subnet.private-eu-central-1b.id,
-      aws_subnet.public-eu-central-1a.id,
-      aws_subnet.public-eu-central-1b.id
-    ]
+  manage_aws_auth_configmap = true
+
+  aws_auth_roles = [
+    {
+      rolearn  = "arn:aws:iam::767728685280:role/AWSReservedSSO_PowerUserAccess_dev_btcturk_bf1816004d669858"
+      username = "cluster-admin"
+      groups   = ["system:masters"]
+    },
+    {
+      rolearn  = "arn:aws:iam::767728685280:role/AWSReservedSSO_AdministratorAccess_a26132fc7f5ea549"
+      username = "cluster-admin"
+      groups   = ["system:masters"]
+    },
+  ]
+
+  eks_managed_node_groups = {
+    traffic = {
+      min_size     = 1
+      max_size     = 10
+      desired_size = 1
+
+      instance_types = ["m5.xlarge"]
+      ami_type = "BOTTLEROCKET_x86_64"
+      platform = "bottlerocket"
+
+      labels = {
+        dedicated = "traffic"
+      }
+    }
+    singletons = {
+      min_size     = 1
+      max_size     = 1
+      desired_size = 1
+
+      instance_types = ["m5.xlarge"]
+      ami_type = "BOTTLEROCKET_x86_64"
+      platform = "bottlerocket"
+
+      labels = {
+        dedicated = "singletons"
+      }      
+      
+      taints = [
+        {
+          key    = "dedicated"
+          value  = "singletons"
+          effect = "NO_SCHEDULE"
+        }
+      ]
+    }
   }
-
-  depends_on = [aws_iam_role_policy_attachment.demo-AmazonEKSClusterPolicy]
 }
-
