@@ -34,7 +34,7 @@ module "eks" {
 
   aws_auth_roles = [
     {
-      rolearn  = "arn:aws:iam::767728685280:role/AWSReservedSSO_PowerUserAccess_dev_btcturk_bf1816004d669858"
+      rolearn  = "arn:aws:iam::767728685280:role/AWSReservedSSO_PowerUserAccess__bf1816004d669858"
       username = "cluster-admin"
       groups   = ["system:masters"]
     },
